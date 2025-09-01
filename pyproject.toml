@@ -1,0 +1,10 @@
+[project]
+name = "k8s-data-platform-mediawiki-kafka-ingester"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "aiohttp>=3.10.11",
+    "confluent-kafka>=2.11.1",
+]
