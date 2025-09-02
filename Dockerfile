@@ -22,6 +22,6 @@ ENV PYTHONPATH="/app"
 
 COPY --from=builder /app/.venv /app/.venv
 
-COPY ./src/jobs jobs
-COPY ./src/utils utils
-COPY ./src/configs configs
+COPY ./src src
+
+ENTRYPOINT ["python", "src/app.py"]
