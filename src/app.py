@@ -3,15 +3,15 @@ import aiohttp
 from confluent_kafka import Producer
 
 # Environment variables
-KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "kafka.kafka:9092")
-KAFKA_TOPIC     = os.getenv("KAFKA_TOPIC", "mediawiki.page-create")
-EVENTSTREAM_URL = os.getenv("EVENTSTREAM_URL", "https://stream.wikimedia.org/v2/stream/mediawiki.page-create")
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka.kafka:9092")
+KAFKA_TOPIC             = os.getenv("KAFKA_TOPIC", "mediawiki.page-create")
+EVENTSTREAM_URL         = os.getenv("EVENTSTREAM_URL", "https://stream.wikimedia.org/v2/stream/mediawiki.page-create")
 
 # Function
 def get_kafka_config():
     """Get Kafka configuration"""
     return {
-        "bootstrap.servers": KAFKA_BOOTSTRAP,
+        "bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS,
         "acks": "all",
         "enable.idempotence": True,
         "compression.type": "zstd",
