@@ -2,16 +2,11 @@ import os, json, signal, asyncio, uuid
 import aiohttp
 from confluent_kafka import Producer
 
-# Environment variables
-KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka.kafka:9092")
-KAFKA_TOPIC             = os.getenv("KAFKA_TOPIC", "mediawiki.page-create")
-EVENTSTREAM_URL         = os.getenv("EVENTSTREAM_URL", "https://stream.wikimedia.org/v2/stream/mediawiki.page-create")
-
-# Function
 def get_kafka_config():
     """Get Kafka configuration"""
+    kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka.kafka:9092")
     return {
-        "bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS,
+        "bootstrap.servers": kafka_bootstrap_servers,
         "acks": "all",
         "enable.idempotence": True,
         "compression.type": "zstd",
@@ -35,11 +30,11 @@ def setup_signal_handlers(shutdown_event):
         except NotImplementedError:
             signal.signal(sig, lambda *_: shutdown_event.set())
 
-async def process_event(producer, event_data):
+async def process_event(producer, kafka_topic, event_data):
     """Send event to Kafka"""
     try:
         producer.produce(
-            topic=KAFKA_TOPIC,
+            topic=kafka_topic,
             key=uuid.uuid4().bytes,
             value=json.dumps(event_data, ensure_ascii=False).encode("utf-8"),
         )
@@ -53,7 +48,8 @@ async def process_stream_line(line, buf):
         buf.append(line[5:].lstrip())
     return buf
 
-async def main():
+async def run_event_stream_processor(kafka_topic, eventstream_url, user_agent):
+    """Run the event stream processor"""
     shutdown_event = asyncio.Event()
     setup_signal_handlers(shutdown_event)
     
@@ -64,9 +60,9 @@ async def main():
             try:
                 headers = {
                     "Accept": "text/event-stream",
-                    "User-Agent": "k8s-data-platform-mediawiki-kafka-ingester"
+                    "User-Agent": user_agent
                 }
-                async with session.get(EVENTSTREAM_URL, headers=headers) as response:
+                async with session.get(eventstream_url, headers=headers) as response:
                     response.raise_for_status()
                     buf = []
                     
@@ -79,7 +75,7 @@ async def main():
                         if not line and buf:
                             try:
                                 event = json.loads("\n".join(buf))
-                                await process_event(producer, event)
+                                await process_event(producer, kafka_topic, event)
                             except json.JSONDecodeError:
                                 print("Failed to parse JSON event")
                             buf.clear()
@@ -95,10 +91,3 @@ async def main():
                 await asyncio.sleep(5)
 
     producer.flush(10)
-
-# Entry point
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\nShutting down gracefully...")

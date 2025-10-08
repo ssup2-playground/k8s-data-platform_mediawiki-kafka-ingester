@@ -24,4 +24,4 @@ COPY --from=builder /app/.venv /app/.venv
 
 COPY ./src src
 
-ENTRYPOINT ["python", "src/app.py"]
+ENTRYPOINT ["python"]
